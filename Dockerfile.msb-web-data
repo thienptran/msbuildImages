@@ -1,0 +1,16 @@
+FROM thienptran/msb-web:v1
+
+
+####
+#    DataTools Workload
+####
+RUN C:\\TEMP\\vs_buildtools.exe modify --wait --quiet --norestart --nocache --installPath C:\BuildTools \
+    --add Microsoft.VisualStudio.Workload.DataBuildTools;includeRecommended \
+    || IF "%ERRORLEVEL%"=="3010" EXIT 0
+
+WORKDIR /data
+
+# Start developer command prompt with any other commands specified.
+ENTRYPOINT C:\BuildTools\Common7\Tools\VsDevCmd.bat &&
+
+CMD [ "ping localhost -t" ]

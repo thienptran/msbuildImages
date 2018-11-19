@@ -1,0 +1,37 @@
+FROM thienptran/win1803-ds:v1
+
+#ADD https://dist.nuget.org/win-x86-commandline/v4.8.1/nuget.exe C:\\Nuget\\nuget.exe
+#ADD https://aka.ms/vs/15/release/vs_buildtools.exe C:\\temp\\vs_buildtools.exe
+
+ADD artifacts/nuget.exe C:\\Nuget\\nuget.exe
+ADD artifacts/vs_buildtools.exe C:\\temp\\vs_buildtools.exe
+
+#Update PATH environment variables
+RUN Powershell -Command \
+    $path =  'C:\nuget;' + $env:path ; \
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -Name Path -Value $path ; \
+    refreshenv
+
+####
+#    MSBuild Components
+####
+RUN C:\\TEMP\\vs_buildtools.exe --wait --quiet --norestart  --nocache --installPath C:\BuildTools \
+    --add Microsoft.Component.MSBuild \
+    --add Microsoft.VisualStudio.Component.CoreBuildTools \
+    --add Microsoft.VisualStudio.Component.Roslyn.Compiler \
+    --add Microsoft.VisualStudio.Component.NuGet.BuildTools \
+    || IF "%ERRORLEVEL%"=="3010" EXIT 0
+
+####
+#    WebApplication Workload
+####
+RUN C:\\TEMP\\vs_buildtools.exe modify --wait --quiet --norestart --nocache --installPath C:\BuildTools \
+    --add Microsoft.VisualStudio.Workload.WebBuildTools;includeRecommended;includeOptional \
+    || IF "%ERRORLEVEL%"=="3010" EXIT 0
+
+WORKDIR /data
+
+# Start developer command prompt with any other commands specified.
+ENTRYPOINT C:\BuildTools\Common7\Tools\VsDevCmd.bat &&
+
+CMD [ "ping localhost -t" ]
